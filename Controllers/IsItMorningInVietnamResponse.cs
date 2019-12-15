@@ -6,5 +6,6 @@ namespace isitmorninginvietnam.com.Controllers
     {
         public bool IsMorning;
         public string TimeToNextSunriseText = "";
+        public string CurrentTimeText="";
     }
 }

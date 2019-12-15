@@ -1,15 +1,5 @@
 <template>
-  <div class="centerwrapper">
-  <div v-if="isMorning==null">
-  </div>
-  <div v-else-if="isMorning">
-  </div>
-  <div v-else id="not-morning"><h1>NO</h1></div>
-  hi
-  {{this.isMorning==null}}
-  {{this.timeToNextMorningText}}
-  {{this.responseText}}
-  </div>
+
   
 </template>
 
@@ -30,8 +20,8 @@ export default {
     .then((response) => {
       this.created=true
       this.responseText = response
-      this.isMorning = response.isMorning
-      this.timeToNextMorningText = response.timeToNextSunriseText
+      this.isMorning = response.data.isMorning
+      this.timeToNextMorningText = response.data.timeToNextSunriseText
     })
     
     
@@ -41,7 +31,9 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-#not-morning{}
+#not-morning{
+  background-image:linear-gradient(#c9c9c9,#c9c9c9, #ffffff);
+}
 #not-morning h1{
   font-size: 72pt;
 }

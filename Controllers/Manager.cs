@@ -9,193 +9,118 @@ namespace isitmorninginvietnam.com.Controllers
     public class Manager
     {
         public IsItMorningInVietnamResponse IsItMorningInVietnam(){
+            //All time calculations are done in UTC time
 
-            var currentUTC = DateTime.UtcNow.AddHours(12);
-            var currentIndochinaTime = currentUTC.AddHours(7);
+            //Get current time in UTC
+            var currentUTC = DateTime.UtcNow;
 
-
-            Console.WriteLine("AAA");
-            Console.WriteLine(currentIndochinaTime.Date.ToString("yyyy-MM-dd"));
-
-            //get the sunrise time for the current day in vietnam
-            var responseJSON = JsonConvert.DeserializeObject<SunriseApiResponse>(
-                WebGetSync("https://api.sunrise-sunset.org/json?lat=10.8231&lng=106.6297&formatted=0&date="
-                            + currentIndochinaTime.Date.ToString("yyyy-MM-dd"))
+            //Hit the Sunrise Sunset API to get sunrise time. Save as string for manual processing later.
+            //do this because parsing the response into an object containing DateTime objects with
+            //Newtonsoft.JSON does not work properly. Hours from response are not maintained.
+            string ApiResponseAsString = WebGetSync(
+                "https://api.sunrise-sunset.org/json?lat=10.8231&lng=106.6297&formatted=0"
             );
 
-            Console.WriteLine("https://api.sunrise-sunset.org/json?lat=10.8231&lng=106.6297&formatted=0&date="
-                            + currentIndochinaTime.Date.ToString("yyyy-MM-dd"));
+            //Get sunrise time as yyyy-MM-ddTHH-mm-ssZ
+            string ApiResponseSunriseDateTimeString = ApiResponseAsString.Substring(23,19) + "Z";
 
-            var noonUTC = currentUTC.Date + new TimeSpan(12,0,0);
+            //Parse the api response sunrise time string into a datetime manually.
+            var sunriseUTC = 
+                new DateTime(
+                    Int32.Parse(ApiResponseSunriseDateTimeString.Substring(0,4)), //year
+                    Int32.Parse(ApiResponseSunriseDateTimeString.Substring(5,2)), //month
+                    Int32.Parse(ApiResponseSunriseDateTimeString.Substring(8,2))  //day
+                ).Date //use the date to make sure we take none of the time portion
+                + new TimeSpan(
+                    Int32.Parse(ApiResponseSunriseDateTimeString.Substring(11,2)), //hours
+                    Int32.Parse(ApiResponseSunriseDateTimeString.Substring(14,2)), //minutes
+                    Int32.Parse(ApiResponseSunriseDateTimeString.Substring(17,2))  //seconds
+                );
+
+            //Indochina (Vietnam) time is UTC+7 or 7 hours ahead of UTC.
+            //Therefore, when it is noon in Vietnam, it 5 AM in UTC Time. (5 + 7 = 12)
+            var noonUTC = currentUTC.Date + new TimeSpan(5,0,0);
 
             var isMorning = IsMorning(
-                responseJSON.results.sunrise,
+                sunriseUTC,
                 noonUTC, 
                 currentUTC
             );
-
-            Console.WriteLine(isMorning);
-
-
-            Console.WriteLine(currentUTC);
-            Console.WriteLine(responseJSON.results.sunrise);
-
-            //if it is morning
-            if(isMorning){
-                Console.WriteLine("Itsmorning");
-                return new IsItMorningInVietnamResponse
-                {
-                    IsMorning = true,
-                    TimeToNextSunriseText = ""
-                };
-            }
-            //If the current utc date is before the one in vietnam
-            //or its the same day, but morning has not come yet
-            else if(currentUTC.Date < currentIndochinaTime.Date
-                    || (currentUTC < responseJSON.results.sunrise) )
+            
+            if(isMorning)
             {
-                Console.WriteLine("NotYetMorning. Its tomorrow or later today");
-                TimeSpan timeToNextSunrise = responseJSON.results.sunrise.Subtract(currentUTC);
-                timeToNextSunrise = timeToNextSunrise.Add(
-                    TimeSpan.FromMinutes(5-((int)timeToNextSunrise.TotalMinutes % 5)) );
-                
-                return new IsItMorningInVietnamResponse
-                {
-                    IsMorning = false,
-                    TimeToNextSunriseText = ((int) Math.Floor((double)(int) timeToNextSunrise.TotalHours)).ToString()
-                                            + " hours and "
-                                            + ((int)(timeToNextSunrise.TotalMinutes) % 60).ToString()
-                                             + " minutes"
+                //If it is morning
+
+                //Note, the representation of current time is in UTC,
+                //which is 7 hours behind Vietnam (Indochina) time,
+                //we have to add 7 hours to UTC time to get local Indochina time
+                return new IsItMorningInVietnamResponse{
+                    IsMorning = true,
+                    TimeToNextSunriseText = "",
+                    CurrentTimeText = currentUTC.AddHours(7).ToShortTimeString() //Get time as HH:mm AMorPM
                 };
             }
-            //if it's the same day that it is in vietnam, and morning has already passed
+            else if(currentUTC < sunriseUTC)
+            {
+                //if it is not morning, but the time is not yet sunrise
+
+                //Get a string to represent how much time till sunrise today like:
+                //HH hours and mm minutes
+                // or 
+                //H hours and m minutes
+                //depending on the amount of hours and minutes
+                //Ceiling this time to the nearest 5 minutes
+
+                TimeSpan timeSpanToNextSunrise = sunriseUTC.Subtract(currentUTC);
+
+                return new IsItMorningInVietnamResponse{
+                    IsMorning = false,
+                    TimeToNextSunriseText = GetTimeToNextSunriseTextFromHoursAndMinutes(
+                        timeSpanToNextSunrise.Hours,
+                        timeSpanToNextSunrise.Minutes
+                    ),
+                    CurrentTimeText = ""
+                };
+            }
             else
             {
-                Console.WriteLine("Morning Happned, its again tomorrow.");
-                
-                 var responseJSONForTomorrow = JsonConvert.DeserializeObject<SunriseApiResponse>(
-                    WebGetSync("https://api.sunrise-sunset.org/json?lat=10.8231&lng=106.6297&formatted=0&date="
-                    + currentIndochinaTime.AddDays(1).Date.ToString("yyyy-MM-dd"))
+                //if it is not morning, but the time is past noon,
+                //get tomorrow's sunrise time, and then give the time till next sunrise 
+
+                string ApiResponseForNextDayAsString = WebGetSync(
+                    "https://api.sunrise-sunset.org/json?lat=10.8231&lng=106.6297&formatted=0&date="
+                    + currentUTC.Date.AddDays(1).ToString("yyyy-MM-dd")
                 );
 
-                TimeSpan timeToNextSunrise = responseJSONForTomorrow.results.sunrise.Subtract(currentUTC);
-                timeToNextSunrise = timeToNextSunrise.Add(
-                    TimeSpan.FromMinutes(5-((int)timeToNextSunrise.TotalMinutes % 5)) );
+                //Get sunrise time as yyyy-MM-ddTHH-mm-ssZ
+                string ApiResponseNextSunriseDateTimeString = ApiResponseForNextDayAsString.Substring(23,19) + "Z";
 
-                return new IsItMorningInVietnamResponse
-                {
+                //Parse the api response sunrise time string into a datetime manually.
+                var nextSunriseUTC = 
+                    new DateTime(
+                        Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(0,4)), //year
+                        Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(5,2)), //month
+                        Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(8,2))  //day
+                    ).Date //use the date to make sure we take none of the time portion
+                  + new TimeSpan(
+                        Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(11,2)), //hours
+                        Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(14,2)), //minutes
+                        Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(17,2))  //seconds
+                    );
+
+                TimeSpan timeSpanToNextSunrise = nextSunriseUTC.Subtract(currentUTC);
+
+                return new IsItMorningInVietnamResponse{
                     IsMorning = false,
-                    TimeToNextSunriseText = ((int) Math.Floor((double)(int) timeToNextSunrise.TotalHours)).ToString()
-                                            + " hours and "
-                                            + ((int)(timeToNextSunrise.TotalMinutes) % 60).ToString()
-                                             + " minutes"
+                    TimeToNextSunriseText = GetTimeToNextSunriseTextFromHoursAndMinutes(
+                        timeSpanToNextSunrise.Hours,
+                        timeSpanToNextSunrise.Minutes
+                    ),
+                    CurrentTimeText = ""
                 };
             }
 
 
-            // var currentUTC = DateTime.UtcNow;
-            // var todayNoonUTC = DateTime.UtcNow;
-
-            // todayNoonUTC = todayNoonUTC.AddMilliseconds(
-            //     -todayNoonUTC.Millisecond
-            // ).AddSeconds(
-            //     -todayNoonUTC.Second
-            // ).AddMinutes(
-            //     -todayNoonUTC.Minute
-            // );
-
-            // if(todayNoonUTC.Hour > 12)
-            // {
-            //     todayNoonUTC.AddHours(-(todayNoonUTC.Hour - 12));
-            // }
-            // else
-            // {
-            //     todayNoonUTC.AddHours(12 - todayNoonUTC.Hour);
-            // }
-
-            // Console.WriteLine(responseJSON.results.sunrise);
-            // Console.WriteLine(todayNoonUTC);
-            // Console.WriteLine(currentUTC);
-
-            // bool isMorning = IsItMorning(
-            //     responseJSON.results.sunrise,
-            //     todayNoonUTC,
-            //     currentUTC
-            // );
-
-            
-            // if(!isMorning)
-            // {
-            //     if(currentUTC.Date > responseJSON.results.sunrise.Date)
-            //     {
-            //                         Console.WriteLine("A");
-            //         Console.WriteLine(responseJSON.results.sunrise.ToString());
-            //         Console.WriteLine( currentUTC.AddHours(7).ToString() );
-            //         string tomorrowDate = DateTime.Now.AddDays(1).Date
-            //                         .ToString("u",CultureInfo.CreateSpecificCulture("de-DE"))
-            //                         .Substring(0,10);
-            //          var nextMorningResponseJSON = JsonConvert.DeserializeObject<SunriseApiResponse>(
-            //         WebGetSync("https://api.sunrise-sunset.org/json?lat=10.8231&lng=106.6297&formatted=0&date=" + tomorrowDate)
-            //     );
-            //      //ceiling to next 5 minutes
-            //     var timeToNextSunrise = nextMorningResponseJSON.results.sunrise.Add(
-            //         TimeSpan.FromMinutes((int)5-(nextMorningResponseJSON.results.sunrise.Minute % 5))
-            //     );
-
-            //      return new IsItMorningInVietnamResponse
-            //         {
-            //             IsMorning = isMorning,
-            //             TimeToNextSunriseText = ((int) Math.Floor((double)(int) timeToNextSunrise.Hour)).ToString()
-            //                                     + " hours and "
-            //                                     + ((int)(timeToNextSunrise.Minute % 60)).ToString()
-            //                                     + " minutes"
-            //         };
-               
-            //     }
-            //     else if (currentUTC.Hour > responseJSON.results.solar_noon.Hour)
-            //     {
-            //         Console.WriteLine("B1");
-            //         Console.WriteLine(responseJSON.results.sunrise.ToString());
-            //         Console.WriteLine( currentUTC.AddHours(7).ToString() );
-            //         TimeSpan timeToTodaySunrise = (responseJSON.results.sunrise).Subtract(currentUTC.AddHours(7));
-            //         
-            //     );
-
-            //         return new IsItMorningInVietnamResponse
-            //         {
-            //             IsMorning = isMorning,
-            //             TimeToNextSunriseText = ((int) Math.Floor((double)(int) timeToTodaySunrise.TotalHours)).ToString()
-            //                                     + " hours and "
-            //                                     + ((int)(timeToTodaySunrise.TotalMinutes) % 60).ToString()
-            //                                     + " minutes"
-            //         };
-            //     }
-            //     else
-            //     {
-            //         Console.WriteLine("B2");
-
-            //         TimeSpan timeToTodaySunrise = (currentUTC.AddHours(7)).Subtract(responseJSON.results.sunrise);
-            //         timeToTodaySunrise = timeToTodaySunrise.Add(
-            //         TimeSpan.FromMinutes(5-((int)timeToTodaySunrise.TotalMinutes % 5))
-            //     );
-
-            //         return new IsItMorningInVietnamResponse
-            //         {
-            //             IsMorning = isMorning,
-            //             TimeToNextSunriseText = ((int) Math.Floor((double)(int) timeToTodaySunrise.TotalHours)).ToString()
-            //                                     + " hours and "
-            //                                     + ((int)(timeToTodaySunrise.TotalMinutes) % 60).ToString()
-            //                                     + " minutes"
-            //         };
-            //     }
-
-               
-
-                
-
-               
-
-            // }
         }
 
         public bool IsMorning(DateTime sunriseUTC, DateTime noonUTC, DateTime givenUTC)
@@ -214,6 +139,24 @@ namespace isitmorninginvietnam.com.Controllers
             {
                 return reader.ReadToEnd();
             }
+        }
+
+        public string GetTimeToNextSunriseTextFromHoursAndMinutes(int hours, int minutes)
+        {
+            if(minutes > 55)
+                {
+                    //if there are more than 55 minutes in the timespan, round to the next hour
+                    return (hours + 1).ToString() + " hours";
+                }
+                else
+                {
+                    //if there are not more than 55 minutes in the timespan
+                    return hours.ToString()
+                        + " hours and "
+                        //ceiling minutes to nearest 5 minutes
+                        + (minutes + (5 - (minutes % 5))).ToString() 
+                        + " minutes";
+                }   
         }
 
     }
