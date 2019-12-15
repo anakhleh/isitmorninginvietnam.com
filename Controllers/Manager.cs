@@ -143,20 +143,23 @@ namespace isitmorninginvietnam.com.Controllers
 
         public string GetTimeToNextSunriseTextFromHoursAndMinutes(int hours, int minutes)
         {
-            if(minutes > 55)
-                {
-                    //if there are more than 55 minutes in the timespan, round to the next hour
-                    return (hours + 1).ToString() + " hours";
-                }
-                else
-                {
-                    //if there are not more than 55 minutes in the timespan
-                    return hours.ToString()
-                        + " hours and "
-                        //ceiling minutes to nearest 5 minutes
-                        + (minutes + (5 - (minutes % 5))).ToString() 
-                        + " minutes";
-                }   
+            if(hours == 0){
+                return (minutes + (5 - (minutes % 5))).ToString() + " minutes";
+            }
+            else if (minutes > 55)
+            {
+                //if there are more than 55 minutes in the timespan, round to the next hour
+                return (hours + 1).ToString() + " hours";
+            }
+            else
+            {
+                //if there are not more than 55 minutes in the timespan
+                return hours.ToString()
+                    + " hours and "
+                    //ceiling minutes to nearest 5 minutes
+                    + (minutes + (5 - (minutes % 5))).ToString() 
+                    + " minutes";
+            }   
         }
 
     }

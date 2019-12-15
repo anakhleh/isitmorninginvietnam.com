@@ -3,11 +3,11 @@
     <div v-if="isMorning==null">
     </div>
     <div v-else-if="isMorning" id="is-morning">
-      <video autoplay class="video">
+      <video autoplay loop id="video">
         <source src="./assets/videoplayback.mp4" type="video/mp4">
       </video>
       <div class="content">
-        It's 8:30 AM{{currentTimeText}} in Vietnam.
+        It's {{this.currentTimeText}} in Vietnam.
       </div>
     </div>
     <div v-else id="not-morning">
@@ -34,19 +34,25 @@ export default {
     }
   },
   created(){
+    //check whether it is morning, and the time to next morning, and current time text
+    //but you only get the current time if it is morning, and time to next morning if it is not morning
     Axios.get("https://istitmorninginvietnamapi.azurewebsites.net/getifitismorninginvietnam")
     .then((response) => {
       this.isMorning = response.data.isMorning
       this.timeToNextMorningText = response.data.timeToNextSunriseText
       this.currentTimeText = response.data.currentTimeText
     })
-    
-    
   },
-  computed(){
-    return {
-
-    }
+  ready(){
+    //check the time every 5 minutes
+    window.setInterval(() => {
+      Axios.get("https://istitmorninginvietnamapi.azurewebsites.net/getifitismorninginvietnam")
+      .then((response) => {
+        this.isMorning = response.data.isMorning
+        this.timeToNextMorningText = response.data.timeToNextSunriseText
+        this.currentTimeText = response.data.currentTimeText
+      })
+    }, 5000)
   }
 }
 </script>
@@ -61,19 +67,15 @@ export default {
   font-weight: 100;
   font-style: normal;
   text-align: center;
-  height: 100%;
   display: flex;
-  /* justify-content: center; */
-  /* align-items: center; */
+  justify-content: center;
+  align-items: center;
   height: 100vh;
 }
-#is-morning{
-  
-}
-.video{
+#video{
   position: fixed;
-  right: 0;
   bottom: 0;
+  left:0;
   min-width: 100%;
   min-height: 100%;
 }
@@ -96,17 +98,17 @@ export default {
   opacity: 1;
 	animation-name: fadeInOpacity;
 	animation-iteration-count: 1;
-	animation-timing-function: ease-in;
+	animation-timing-f3unction: ease-in;
 	animation-duration: 0.5s;
 }
 .NO{
   font-size: 144pt;
 }
 .But-if-you-come-back{
-  font-weight:300;
+  font-weight:200;
+  font-style: normal;
 }
 .centerwrapper{
-  
   width:100%;
   height:100%;
   margin: 0 auto;
