@@ -12,7 +12,7 @@ namespace isitmorninginvietnam.com.Controllers
             //All time calculations are done in UTC time
 
             //Get current time in UTC
-            var currentUTC = DateTime.UtcNow;
+            
 
             //Hit the Sunrise Sunset API to get sunrise time. Save as string for manual processing later.
             //do this because parsing the response into an object containing DateTime objects with
@@ -36,6 +36,11 @@ namespace isitmorninginvietnam.com.Controllers
                     Int32.Parse(ApiResponseSunriseDateTimeString.Substring(14,2)), //minutes
                     Int32.Parse(ApiResponseSunriseDateTimeString.Substring(17,2))  //seconds
                 );
+            
+            //Get current UTC onto the same date as sunrise date
+            var systemTime = DateTime.UtcNow;
+            var currentUTC = systemTime;
+
 
             //Indochina (Vietnam) time is UTC+7 or 7 hours ahead of UTC.
             //Therefore, when it is noon in Vietnam, it 5 AM in UTC Time. (5 + 7 = 12)
@@ -46,11 +51,14 @@ namespace isitmorninginvietnam.com.Controllers
                 noonUTC, 
                 currentUTC
             );
+            // Console.WriteLine("sunriseUTC: ", sunriseUTC);
+            // Console.WriteLine("noonUTC: ", noonUTC);
+            // Console.WriteLine("currentUTC: ", currentUTC);
             
             if(isMorning)
             {
+                Console.WriteLine("isMorning");
                 //If it is morning
-
                 //Note, the representation of current time is in UTC,
                 //which is 7 hours behind Vietnam (Indochina) time,
                 //we have to add 7 hours to UTC time to get local Indochina time
@@ -60,8 +68,9 @@ namespace isitmorninginvietnam.com.Controllers
                     CurrentTimeText = currentUTC.AddHours(7).ToShortTimeString() //Get time as HH:mm AMorPM
                 };
             }
-            else if(currentUTC < sunriseUTC)
+            else if((currentUTC < sunriseUTC))
             {
+                Console.WriteLine("current < sunrise");
                 //if it is not morning, but the time is not yet sunrise
 
                 //Get a string to represent how much time till sunrise today like:
@@ -84,6 +93,7 @@ namespace isitmorninginvietnam.com.Controllers
             }
             else
             {
+                Console.WriteLine("else");
                 //if it is not morning, but the time is past noon,
                 //get tomorrow's sunrise time, and then give the time till next sunrise 
 
@@ -108,7 +118,11 @@ namespace isitmorninginvietnam.com.Controllers
                         Int32.Parse(ApiResponseNextSunriseDateTimeString.Substring(17,2))  //seconds
                     );
 
+                
+
                 TimeSpan timeSpanToNextSunrise = nextSunriseUTC.Subtract(currentUTC);
+                Console.WriteLine(nextSunriseUTC);
+                Console.WriteLine(timeSpanToNextSunrise);
 
                 return new IsItMorningInVietnamResponse{
                     IsMorning = false,
@@ -119,13 +133,16 @@ namespace isitmorninginvietnam.com.Controllers
                     CurrentTimeText = ""
                 };
             }
-
-
         }
 
         public bool IsMorning(DateTime sunriseUTC, DateTime noonUTC, DateTime givenUTC)
         {
-            return (sunriseUTC <= givenUTC) && (givenUTC < noonUTC);
+            Console.WriteLine(sunriseUTC);
+            Console.WriteLine(noonUTC);
+            Console.WriteLine(givenUTC);
+            Console.WriteLine((sunriseUTC <= givenUTC));
+            Console.WriteLine((givenUTC < noonUTC));
+            return (sunriseUTC <= givenUTC.AddDays(-1)) && (givenUTC.AddDays(-1) < noonUTC);
         }
        
         public string WebGetSync(string uri)
