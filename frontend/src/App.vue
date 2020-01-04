@@ -7,11 +7,20 @@
       <iframe 
       width="755"
       height="425"
-      src="https://www.youtube.com/embed/BIikfdNIHQE?autoplay=1&controls=0&loop=1&https://developers.google.com/youtube/player_parameters&modestbranding=1&disablekb=1"
+      src="https://www.youtube.com/embed/BIikfdNIHQE?autoplay=1&controls=0&loop=1&modestbranding=1&disablekb=1%html5=True"
       frameborder="0"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen
       id="video"
+      ></iframe>
+      <iframe 
+      width="400"
+      height="300"
+      src="https://www.youtube.com/embed/bsnyIrj8CM4?autoplay=1&controls=0&loop=1&modestbranding=1&disablekb=1%html5=True"
+      frameborder="0"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      id="videomobile"
       ></iframe>
       <div class="content">
         It's {{this.currentTimeText}} in Vietnam.
@@ -149,8 +158,6 @@ li {
 a {
   color: #42b983;
 }
-
-
 @keyframes fadeInOpacity {
 	0% {
 		opacity: 0;
@@ -159,4 +166,30 @@ a {
 		opacity: 1;
 	}
 }
+@media (pointer:coarse){
+  #video{
+    display:none;
+  }
+  #videomobile{
+      position: fixed;
+  bottom: 0;
+  left:0;
+  min-width: 100%;
+  min-height: 100%;
+  }
+}
+
+@media (hover:none){
+    #video{
+    display:none;
+  }
+  #videomobile{
+      /* position: fixed; */
+  /* bottom: 0; */
+  /* left:0; */
+  /* min-width: 100%; */
+  /* min-height: 100%; */
+  }
+}
+
 </style>
