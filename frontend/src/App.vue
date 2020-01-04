@@ -1,11 +1,18 @@
 <template>
   <div id="#app" class="center-content-wrapper">
     <div v-if="isMorning==null">
+      <!-- Do nothing until response -->
     </div>
     <div v-else-if="isMorning" id="is-morning">
-      <video autoplay loop id="video">
-        <source src="./assets/videoplayback.mp4" type="video/mp4">
-      </video>
+      <iframe 
+      width="755"
+      height="425"
+      src="https://www.youtube.com/embed/BIikfdNIHQE?autoplay=1&controls=0&loop=1&https://developers.google.com/youtube/player_parameters&modestbranding=1&disablekb=1"
+      frameborder="0"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      id="video"
+      ></iframe>
       <div class="content">
         It's {{this.currentTimeText}} in Vietnam.
       </div>
@@ -41,18 +48,32 @@ export default {
       this.isMorning = response.data.isMorning
       this.timeToNextMorningText = response.data.timeToNextSunriseText
       this.currentTimeText = response.data.currentTimeText
+      
     })
+
   },
   ready(){
     //check the time every 5 minutes
     window.setInterval(() => {
-      Axios.get("https://istitmorninginvietnamapi.azurewebsites.net/getifitismorninginvietnam")
+      Axios.get("https://istitmorninginvietnamapi.azurewebsites.net/getifitismorninginvietnam&showinfo=0")
       .then((response) => {
         this.isMorning = response.data.isMorning
         this.timeToNextMorningText = response.data.timeToNextSunriseText
         this.currentTimeText = response.data.currentTimeText
       })
     }, 5000)
+  },
+  methods:{
+    play: function() {
+            document.getElementById('video').click()
+
+      document.getElementById('video').play()
+    }
+  },
+  computed:{
+    morning() {
+      return this.isMorning
+    }
   }
 }
 </script>
