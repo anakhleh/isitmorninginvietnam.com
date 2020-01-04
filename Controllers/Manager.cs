@@ -39,7 +39,7 @@ namespace isitmorninginvietnam.com.Controllers
             
             //Get current UTC onto the same date as sunrise date
             var systemTime = DateTime.UtcNow;
-            var currentUTC = systemTime;
+            var currentUTC = systemTime.Subtract(new TimeSpan(,0,0));
 
 
             //Indochina (Vietnam) time is UTC+7 or 7 hours ahead of UTC.
@@ -137,12 +137,17 @@ namespace isitmorninginvietnam.com.Controllers
 
         public bool IsMorning(DateTime sunriseUTC, DateTime noonUTC, DateTime givenUTC)
         {
-            Console.WriteLine(sunriseUTC);
-            Console.WriteLine(noonUTC);
-            Console.WriteLine(givenUTC);
-            Console.WriteLine((sunriseUTC <= givenUTC));
-            Console.WriteLine((givenUTC < noonUTC));
-            return (sunriseUTC <= givenUTC.AddDays(-1)) && (givenUTC.AddDays(-1) < noonUTC);
+            // Console.WriteLine(sunriseUTC);
+            // Console.WriteLine(noonUTC);
+            // Console.WriteLine(givenUTC);
+            // Console.WriteLine((sunriseUTC <= givenUTC));
+            // Console.WriteLine((givenUTC < noonUTC));
+            var sunriseTimeUTC= new TimeSpan(sunriseUTC.Hour, sunriseUTC.Minute, sunriseUTC.Second);
+            var noonTimeUTC = new TimeSpan(noonUTC.Hour, noonUTC.Minute, noonUTC.Second);
+            var givenTimeUTC = new TimeSpan(givenUTC.Hour, givenUTC.Minute ,givenUTC.Second);
+
+            // return (sunriseUTC <= givenUTC) && (givenUTC < noonUTC);
+            return (sunriseTimeUTC <= givenTimeUTC || givenTimeUTC < noonTimeUTC);
         }
        
         public string WebGetSync(string uri)
