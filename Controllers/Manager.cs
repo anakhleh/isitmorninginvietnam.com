@@ -39,7 +39,7 @@ namespace isitmorninginvietnam.com.Controllers
             
             //Get current UTC onto the same date as sunrise date
             var systemTime = DateTime.UtcNow;
-            var currentUTC = systemTime.Subtract(new TimeSpan(,0,0));
+            var currentUTC = systemTime;
 
 
             //Indochina (Vietnam) time is UTC+7 or 7 hours ahead of UTC.
