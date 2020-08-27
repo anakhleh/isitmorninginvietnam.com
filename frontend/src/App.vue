@@ -1,13 +1,28 @@
 <template>
   <div
-    id="#app"
+    id="app"
     class="center-content-wrapper"
   >
-    <div v-if="isMorning==null">
+    <div
+      v-if="isFailure==true"
+      class="failure-message"
+    >
+      It seems that isitmorninginvietnam.alexnakhleh.com is currently down.
+      <br>
+      <br>
+      Please <a
+        href="mailto:alex@alexnakhleh.com"
+        style="mailto-alex"
+      ><i><b><u>email Alex at alex@alexnakhleh.com</u></b></i></a> to let him know.
+    </div>
+    <div v-else-if="isMorning==null && isFailure==false">
+      <div class="vietnam-loading-spinner">
+
+      </div>
       <!-- Do nothing until response -->
     </div>
     <div
-      v-else-if="isMorning"
+      v-else-if="isMorning == true"
       id="is-morning"
     >
       <iframe
@@ -45,7 +60,8 @@ export default {
     return {
       isMorning: null,
       timeToNextMorningText: null,
-      currentTimeText: null
+      currentTimeText: null,
+      isFailure: false
     };
   },
   created() {
@@ -53,22 +69,34 @@ export default {
     //but you only get the current time if it is morning, and time to next morning if it is not morning
     Axios.get(
       "https://istitmorninginvietnamapi.azurewebsites.net/getifitismorninginvietnam"
-    ).then(response => {
-      this.isMorning = response.data.isMorning;
-      this.timeToNextMorningText = response.data.timeToNextSunriseText;
-      this.currentTimeText = response.data.currentTimeText;
-    });
+    )
+      .then(response => {
+        console.log(response);
+        if (response.data.isMorning === null) {
+          this.isFailure = true;
+        } else {
+          this.isMorning = response.data.isMorning;
+          this.timeToNextMorningText = response.data.timeToNextSunriseText;
+          this.currentTimeText = response.data.currentTimeText;
+        }
+      })
+      .catch(e => {
+        console.log(e);
+        this.isFailure = true;
+      });
   },
   ready() {
     //check the time every 5 minutes
     window.setInterval(() => {
       Axios.get(
         "https://istitmorninginvietnamapi.azurewebsites.net/getifitismorninginvietnam&showinfo=0"
-      ).then(response => {
-        this.isMorning = response.data.isMorning;
-        this.timeToNextMorningText = response.data.timeToNextSunriseText;
-        this.currentTimeText = response.data.currentTimeText;
-      });
+      )
+        .then(response => {
+          this.isMorning = response.data.isMorning;
+          this.timeToNextMorningText = response.data.timeToNextSunriseText;
+          this.currentTimeText = response.data.currentTimeText;
+        })
+        .catch(() => {});
     }, 5000);
   },
   methods: {
@@ -86,12 +114,25 @@ export default {
 </script>
 
 <style>
+@import url("https://use.typekit.net/mai4xwg.css");
 #app {
+}
+.vietnam-loading-spinner {
+  background: red;
+  width: 300px;
+  height: 300px;
+}
+.failure-message {
+  font-family: acumin-pro-wide, sans-serif;
+  text-align: center;
+  font-size: 15pt;
+  font-weight: 300;
+}
+.mailto-alex {
 }
 .center-content-wrapper {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: acumin-pro-wide, sans-serif;
   font-weight: 100;
   font-style: normal;
   text-align: center;
@@ -123,6 +164,8 @@ export default {
 }
 
 #not-morning {
+  font-family: acumin-pro-wide, sans-serif;
+  font-weight: 300;
   opacity: 1;
   animation-name: fadeInOpacity;
   animation-iteration-count: 1;
@@ -133,7 +176,7 @@ export default {
   font-size: 144pt;
 }
 .But-if-you-come-back {
-  font-weight: 200;
+  font-weight: 400;
   font-style: normal;
 }
 .centerwrapper {
@@ -141,7 +184,6 @@ export default {
   height: 100%;
   margin: 0 auto;
 }
-
 h3 {
   margin: 40px 0 0;
 }
